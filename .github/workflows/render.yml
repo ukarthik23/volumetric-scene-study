@@ -1,0 +1,41 @@
+name: Render volumetric scene
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Render mode
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - full
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install renderer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          python -m pip install --quiet numpy scipy
+          npm install --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Build cloud field
+        run: python build_volume.py
+      - name: Render
+        run: node render.cjs '${{ inputs.mode }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: volumetric-scene-output
+          path: output/
+          if-no-files-found: warn
