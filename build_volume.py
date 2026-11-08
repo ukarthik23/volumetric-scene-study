@@ -23,10 +23,11 @@ def octave(coarse, strength):
 
 # All three axes are continuous. Broad banks contain finer folds, without
 # spherical objects, cellular noise, repeated video slices, or a loop boundary.
-field = octave((12, 5, 8), 0.48)
-field += octave((33, 12, 22), 0.32)
-field += octave((92, 36, 64), 0.20)
-density = np.clip((field - 0.48) / 0.30, 0, 1)
+field = octave((20, 12, 35), 0.32)
+field += octave((52, 30, 94), 0.31)
+field += octave((123, 70, 225), 0.27)
+field += octave((220, 116, 390), 0.10)
+density = np.clip((field - 0.50) / 0.27, 0, 1)
 density = density * density * (3 - 2 * density)
 OUT.write_bytes(np.rint(density * 255).astype(np.uint8).tobytes())
 print(f"Wrote {OUT.name}: {OUT.stat().st_size} bytes, mean density={density.mean():.3f}")
