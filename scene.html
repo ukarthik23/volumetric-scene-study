@@ -58,11 +58,11 @@ const at=gl.getAttribLocation(prog,"p");gl.enableVertexAttribArray(at);gl.vertex
 const clock=gl.getUniformLocation(prog,"seconds");
 window.ready=(async()=>{
  const response=await fetch("density.r8");if(!response.ok)throw Error("Density field missing");
- const data=new Uint8Array(await response.arrayBuffer());if(data.length!==512*144*256)throw Error("Density field size mismatch");
+ const data=new Uint8Array(await response.arrayBuffer());if(data.length!==512*216*384)throw Error("Density field size mismatch");
  const tex=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_3D,tex);
  gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
  for(const axis of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T,gl.TEXTURE_WRAP_R])gl.texParameteri(gl.TEXTURE_3D,axis,gl.CLAMP_TO_EDGE);
- gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.texImage3D(gl.TEXTURE_3D,0,gl.R8,256,144,512,0,gl.RED,gl.UNSIGNED_BYTE,data);
+ gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.texImage3D(gl.TEXTURE_3D,0,gl.R8,384,216,512,0,gl.RED,gl.UNSIGNED_BYTE,data);
  if(gl.getError()!==gl.NO_ERROR)throw Error("3D texture upload failed");gl.uniform1i(gl.getUniformLocation(prog,"field"),0);
  window.renderFrame=(frame)=>{gl.uniform1f(clock,frame/24);gl.viewport(0,0,1280,720);gl.drawArrays(gl.TRIANGLES,0,3);gl.finish();return canvas.toDataURL("image/jpeg",.94).split(",")[1]};
  window.renderFrame(0);
