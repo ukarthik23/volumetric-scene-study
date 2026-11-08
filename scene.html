@@ -20,25 +20,26 @@ float star(vec2 p,vec3 w,float cam,float phase){
 void main(){
  vec2 p=(uv-.5)*vec2(1.77778,1.);
  float cam=seconds*.0078;
- vec3 color=vec3(.0007,.0022,.007);float trans=1.;
+ vec3 color=vec3(.00015,.00035,.0012);float trans=1.;
  for(int i=0;i<48;i++){
   float k=(float(i)+.5)/48.;float depth=.018+k*.59;
   vec3 pos=vec3(.5+p*(.020+k*.275),cam+depth);
   if(pos.x<.002||pos.x>.998||pos.y<.002||pos.y>.998)continue;
   float d=texture(field,pos).r;
-  float body=smoothstep(.20,.78,d);
+  float body=smoothstep(.57,.85,d);
   float side=texture(field,pos+vec3(.009,-.006,-.004)).r;
   float fine=texture(field,pos+vec3(-.004,.005,.004)).r;
-  float fold=clamp((d-side)*16.,0.,1.);
-  float filament=pow(clamp(abs(d-fine)*25.,0.,1.),1.6);
-  float alpha=body*.068;
-  vec3 blue=vec3(.020,.071,.170)*(.68+.32*k);
-  vec3 light=vec3(.090,.28,.49)*(fold*.72+filament*.28)*body;
-  vec3 q1=(pos-vec3(.30,.65,.33))*vec3(8.,9.,6.);
-  vec3 q2=(pos-vec3(.70,.36,.55))*vec3(7.,8.,6.);
-  vec3 q3=(pos-vec3(.39,.42,.78))*vec3(9.,7.,6.);
-  float pockets=exp(-dot(q1,q1))+exp(-dot(q2,q2))+exp(-dot(q3,q3));
-  vec3 glow=vec3(.34,.70,1.10)*pockets*body*.72;
+  float fold=clamp((d-side)*14.,0.,1.);
+  float filament=pow(clamp(abs(d-fine)*18.,0.,1.),1.8);
+  float alpha=body*.031;
+  vec3 blue=vec3(.010,.029,.064)*(.68+.32*k);
+  vec3 light=vec3(.042,.13,.22)*(fold*.72+filament*.28)*body;
+  vec3 q1=(pos-vec3(.32,.61,.33))*vec3(11.,12.,8.);
+  vec3 q2=(pos-vec3(.67,.38,.55))*vec3(13.,10.,8.);
+  vec3 q3=(pos-vec3(.39,.42,.78))*vec3(12.,11.,8.);
+  vec3 q4=(pos-vec3(.57,.73,.61))*vec3(15.,13.,9.);
+  float pockets=exp(-dot(q1,q1)*2.)+exp(-dot(q2,q2)*2.)+exp(-dot(q3,q3)*2.)+exp(-dot(q4,q4)*2.);
+  vec3 glow=vec3(3.4,5.0,7.2)*pockets*body;
   color+=trans*alpha*(blue+light+glow);
   trans*=1.-alpha;
  }
