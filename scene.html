@@ -1,0 +1,62 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Volumetric study</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas width="1280" height="720"></canvas><script>
+"use strict";
+const canvas=document.querySelector("canvas");
+const gl=canvas.getContext("webgl2",{alpha:false,antialias:false,preserveDrawingBuffer:true});
+if(!gl)throw Error("WebGL2 unavailable");
+const vert=`#version 300 es
+in vec2 p;out vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
+const frag=`#version 300 es
+precision highp float;precision highp sampler3D;
+in vec2 uv;out vec4 pixel;uniform sampler3D field;uniform float seconds;
+float star(vec2 p,vec3 w,float cam,float phase){
+ float dz=w.z-cam;if(dz<.08||dz>.78)return 0.;
+ vec2 projected=vec2(.5)+(w.xy-vec2(.5))/(dz*1.22)*vec2(.5,.89);
+ vec2 q=(uv-projected)*vec2(1.77778,1.);
+ float r=length(q),twinkle=.78+.22*sin(seconds*2.15+phase);
+ return twinkle*(1.1*exp(-r*r*38000.)+.22*exp(-r*r*3100.));
+}
+void main(){
+ vec2 p=(uv-.5)*vec2(1.77778,1.);
+ float cam=seconds*.0078;
+ vec3 color=vec3(.0013,.0042,.012);float trans=1.;
+ for(int i=0;i<48;i++){
+  float k=(float(i)+.5)/48.;float depth=.018+k*.59;
+  vec3 pos=vec3(.5+p*(.020+k*.275),cam+depth);
+  if(pos.x<.002||pos.x>.998||pos.y<.002||pos.y>.998)continue;
+  float d=texture(field,pos).r;
+  float body=smoothstep(.10,.86,d);
+  float side=texture(field,pos+vec3(.007,-.006,-.004)).r;
+  float fold=clamp((d-side)*3.5,0.,1.);
+  float alpha=body*.057;
+  vec3 blue=vec3(.012,.055,.145)*(.68+.32*k);
+  vec3 light=vec3(.055,.18,.32)*fold*.68;
+  color+=trans*alpha*(blue+light);
+  trans*=1.-alpha;
+ }
+ float gold=0.;
+ gold+=star(p,vec3(.43,.56,.45),cam,1.1);
+ gold+=star(p,vec3(.61,.42,.67),cam,2.7);
+ gold+=star(p,vec3(.52,.65,.89),cam,4.2);
+ color+=vec3(1.,.58,.19)*gold;
+ color*=1.-.20*pow(length(p),1.8);
+ pixel=vec4(pow(max(color,vec3(0.)),vec3(.80)),1.);
+}`;
+function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
+const prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vert));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));gl.useProgram(prog);
+const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+const at=gl.getAttribLocation(prog,"p");gl.enableVertexAttribArray(at);gl.vertexAttribPointer(at,2,gl.FLOAT,false,0,0);
+const clock=gl.getUniformLocation(prog,"seconds");
+window.ready=(async()=>{
+ const response=await fetch("density.r8");if(!response.ok)throw Error("Density field missing");
+ const data=new Uint8Array(await response.arrayBuffer());if(data.length!==512*144*256)throw Error("Density field size mismatch");
+ const tex=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_3D,tex);
+ gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+ for(const axis of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T,gl.TEXTURE_WRAP_R])gl.texParameteri(gl.TEXTURE_3D,axis,gl.CLAMP_TO_EDGE);
+ gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.texImage3D(gl.TEXTURE_3D,0,gl.R8,256,144,512,0,gl.RED,gl.UNSIGNED_BYTE,data);
+ if(gl.getError()!==gl.NO_ERROR)throw Error("3D texture upload failed");gl.uniform1i(gl.getUniformLocation(prog,"field"),0);
+ window.renderFrame=(frame)=>{gl.uniform1f(clock,frame/24);gl.viewport(0,0,1280,720);gl.drawArrays(gl.TRIANGLES,0,3);gl.finish();return canvas.toDataURL("image/jpeg",.94).split(",")[1]};
+ window.renderFrame(0);
+})();
+</script></html>
